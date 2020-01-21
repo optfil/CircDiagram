@@ -4,7 +4,12 @@ CountryData = List[Tuple[str, float]]
 
 
 def read_data(filename: str) -> CountryData:
-    return []
+    data: CountryData = []
+    with open(filename) as f:
+        for line in f:
+            tokens: List[str] = line.rstrip().split('\t')
+            data.append((tokens[0], float(tokens[1])))
+    return data
 
 
 def main() -> None:
