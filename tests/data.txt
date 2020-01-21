@@ -1,7 +1,7 @@
-Russia 100
-USA 80
-China 75
-Canada 60
-Australia 30
-RSA 10
-Others 20
+Russia	100
+USA	80
+China	75
+Canada	60
+Australia	30
+RSA	10
+Others	20
