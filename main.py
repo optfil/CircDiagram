@@ -1,4 +1,6 @@
 from typing import List, Tuple
+import sys
+from PySide2.QtWidgets import QApplication, QLabel
 
 CountryData = List[Tuple[str, float]]
 
@@ -17,4 +19,7 @@ def main() -> None:
 
 
 if __name__ == '__main__':
-    main()
+    app = QApplication()
+    label = QLabel("Hello World")
+    label.show()
+    sys.exit(app.exec_())
