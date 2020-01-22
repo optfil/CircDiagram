@@ -3,9 +3,9 @@ import os
 import csv
 import sys
 from PySide2.QtWidgets import QApplication, QHBoxLayout, QMainWindow, QAction, QWidget, QTableView, QHeaderView, \
-    QSizePolicy
+    QSizePolicy, QFileDialog
 from PySide2.QtGui import QKeySequence, QColor
-from PySide2.QtCore import Slot, qApp, Qt, QAbstractTableModel, QModelIndex
+from PySide2.QtCore import qApp, Qt, QAbstractTableModel, QModelIndex
 
 CountryData = List[Tuple[str, float]]
 
@@ -107,18 +107,16 @@ class Form(QMainWindow):
 
         self.setWindowTitle(u'Круговая диаграмма')
 
-        # Creating a QTableView
+        # creating a QTableView
         self.table_view = QTableView()
 
         # QTableView headers
         self.table_view.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeToContents)
         self.table_view.verticalHeader().setSectionResizeMode(QHeaderView.ResizeToContents)
 
-        # Central widget layout
+        # central widget layout
         central_layout = QHBoxLayout()
         size = QSizePolicy(QSizePolicy.Preferred, QSizePolicy.Preferred)
-
-        # Left layout
         size.setHorizontalStretch(1)
         self.table_view.setSizePolicy(size)
         central_layout.addWidget(self.table_view)
@@ -126,41 +124,39 @@ class Form(QMainWindow):
         central_widget = QWidget()
         central_widget.setLayout(central_layout)
 
-        # Set the layout to the QWidget
         self.setCentralWidget(central_widget)
 
+        # main menu
         self.menu = self.menuBar()
         self.file_menu = self.menu.addMenu("File")
 
-        # Exit QAction
+        # load QAction
+        load_action = QAction('Open', self)
+        load_action.setShortcut(QKeySequence.Open)
+        load_action.triggered.connect(self.load_data)
+        self.file_menu.addAction(load_action)
+
+        # exit QAction
         exit_action = QAction('Exit', self)
         exit_action.setShortcut(QKeySequence.Quit)
         exit_action.triggered.connect(self.close)
         self.file_menu.addAction(exit_action)
 
-        # Status Bar
+        # status Bar
         self.status = self.statusBar()
         self.status.showMessage("Data loaded and plotted")
 
-        # Window dimensions
+        # window dimensions
         geometry = qApp.desktop().availableGeometry(self)
         self.setFixedSize(geometry.width() * 0.5, geometry.height() * 0.5)
 
-        # self.edit = QLineEdit("Write my name here", None)
-        # self.button = QPushButton("Show Greetings", None)
-        #
-        # layout = QVBoxLayout()
-        # layout.addWidget(self.edit)
-        # layout.addWidget(self.button)
-        #
-        # self.setLayout(layout)
-        #
-        # self.button.clicked.connect(self.greetings)
-
-    def load_data(self, filename: str):
-        country_data: CountryData = read_data(filename)
-        model = CustomTableModel(country_data)
-        self.table_view.setModel(model)
+    def load_data(self):
+        filename, _ = QFileDialog.getOpenFileName(self, "Load data", dir="./tests",
+                                                  filter="Text files (*.txt);;Excel data (*csv)")
+        if filename:
+            country_data: CountryData = read_data(filename)
+            model = CustomTableModel(country_data)
+            self.table_view.setModel(model)
 
 
 if __name__ == '__main__':
