@@ -10,111 +10,6 @@ from PySide2.QtCore import Slot, qApp, Qt, QAbstractTableModel, QModelIndex
 CountryData = List[Tuple[str, float]]
 
 
-class CustomTableModel(QAbstractTableModel):
-    def __init__(self, country_data=None):
-        QAbstractTableModel.__init__(self)
-        self.countries, self.values = zip(*country_data)
-        self.countries = list(self.countries)
-        self.values = list(self.values)
-
-    def rowCount(self, parent=QModelIndex()):
-        return len(self.values)
-
-    def columnCount(self, parent=QModelIndex()):
-        return 2
-
-    def headerData(self, section, orientation, role):
-        if role != Qt.DisplayRole:
-            return None
-        if orientation == Qt.Horizontal:
-            return ("Country", "Value")[section]
-        else:
-            return "{}".format(section)
-
-    def data(self, index, role=Qt.DisplayRole):
-        column = index.column()
-        row = index.row()
-
-        if role == Qt.DisplayRole:
-            if column == 0:
-                return "{}".format(self.countries[row])
-            elif column == 1:
-                return "{:.6f}".format(self.values[row])
-        elif role == Qt.BackgroundRole:
-            return QColor(Qt.white)
-        elif role == Qt.TextAlignmentRole:
-            return Qt.AlignRight
-
-        return None
-
-
-class CentralWidget(QWidget):
-    def __init__(self, country_data: CountryData):
-        QWidget.__init__(self)
-
-        # Getting the Model
-        self.model = CustomTableModel(country_data)
-
-        # Creating a QTableView
-        self.table_view = QTableView()
-        self.table_view.setModel(self.model)
-
-        # QTableView Headers
-        self.horizontal_header = self.table_view.horizontalHeader()
-        self.vertical_header = self.table_view.verticalHeader()
-        self.horizontal_header.setSectionResizeMode(QHeaderView.ResizeToContents)
-        self.vertical_header.setSectionResizeMode(QHeaderView.ResizeToContents)
-
-        # QWidget Layout
-        self.main_layout = QHBoxLayout()
-        size = QSizePolicy(QSizePolicy.Preferred, QSizePolicy.Preferred)
-
-        # Left layout
-        size.setHorizontalStretch(1)
-        self.table_view.setSizePolicy(size)
-        self.main_layout.addWidget(self.table_view)
-
-        # Set the layout to the QWidget
-        self.setLayout(self.main_layout)
-
-
-class Form(QMainWindow):
-
-    def __init__(self, central: QWidget, parent=None):
-        super(Form, self).__init__(parent)
-
-        self.setWindowTitle(u'Круговая диаграмма')
-        self.setCentralWidget(central)
-        self.menu = self.menuBar()
-        self.file_menu = self.menu.addMenu("File")
-
-        # Exit QAction
-        exit_action = QAction('Exit', self)
-        exit_action.setShortcut(QKeySequence.Quit)
-        exit_action.triggered.connect(self.close)
-
-        self.file_menu.addAction(exit_action)
-
-        # Status Bar
-        self.status = self.statusBar()
-        self.status.showMessage("Data loaded and plotted")
-
-        # Window dimensions
-        geometry = qApp.desktop().availableGeometry(self)
-        self.setFixedSize(geometry.width() * 0.5, geometry.height() * 0.5)
-
-        # self.edit = QLineEdit("Write my name here", None)
-        # self.button = QPushButton("Show Greetings", None)
-        #
-        # layout = QVBoxLayout()
-        # layout.addWidget(self.edit)
-        # layout.addWidget(self.button)
-        #
-        # self.setLayout(layout)
-        #
-        # self.button.clicked.connect(self.greetings)
-
-
 def read_data_txt(filename: str) -> CountryData:
     country_data: CountryData = []
     with open(filename) as f:
@@ -167,12 +62,111 @@ def read_data(filename: str) -> CountryData:
         raise RuntimeError('Cannot read data from file {}: unregistered extension'.format(filename))
 
 
+class CustomTableModel(QAbstractTableModel):
+    def __init__(self, country_data=None):
+        QAbstractTableModel.__init__(self)
+        self.countries, self.values = zip(*country_data)
+        self.countries = list(self.countries)
+        self.values = list(self.values)
+
+    def rowCount(self, parent=QModelIndex()):
+        return len(self.values)
+
+    def columnCount(self, parent=QModelIndex()):
+        return 2
+
+    def headerData(self, section, orientation, role):
+        if role != Qt.DisplayRole:
+            return None
+        if orientation == Qt.Horizontal:
+            return ("Country", "Value")[section]
+        else:
+            return "{}".format(section)
+
+    def data(self, index, role=Qt.DisplayRole):
+        column = index.column()
+        row = index.row()
+
+        if role == Qt.DisplayRole:
+            if column == 0:
+                return "{}".format(self.countries[row])
+            elif column == 1:
+                return "{:.6f}".format(self.values[row])
+        elif role == Qt.BackgroundRole:
+            return QColor(Qt.white)
+        elif role == Qt.TextAlignmentRole:
+            return Qt.AlignRight
+
+        return None
+
+
+class Form(QMainWindow):
+
+    def __init__(self, parent=None):
+        super(Form, self).__init__(parent)
+
+        self.setWindowTitle(u'Круговая диаграмма')
+
+        # Creating a QTableView
+        self.table_view = QTableView()
+
+        # QTableView headers
+        self.table_view.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeToContents)
+        self.table_view.verticalHeader().setSectionResizeMode(QHeaderView.ResizeToContents)
+
+        # Central widget layout
+        central_layout = QHBoxLayout()
+        size = QSizePolicy(QSizePolicy.Preferred, QSizePolicy.Preferred)
+
+        # Left layout
+        size.setHorizontalStretch(1)
+        self.table_view.setSizePolicy(size)
+        central_layout.addWidget(self.table_view)
+
+        central_widget = QWidget()
+        central_widget.setLayout(central_layout)
+
+        # Set the layout to the QWidget
+        self.setCentralWidget(central_widget)
+
+        self.menu = self.menuBar()
+        self.file_menu = self.menu.addMenu("File")
+
+        # Exit QAction
+        exit_action = QAction('Exit', self)
+        exit_action.setShortcut(QKeySequence.Quit)
+        exit_action.triggered.connect(self.close)
+        self.file_menu.addAction(exit_action)
+
+        # Status Bar
+        self.status = self.statusBar()
+        self.status.showMessage("Data loaded and plotted")
+
+        # Window dimensions
+        geometry = qApp.desktop().availableGeometry(self)
+        self.setFixedSize(geometry.width() * 0.5, geometry.height() * 0.5)
+
+        # self.edit = QLineEdit("Write my name here", None)
+        # self.button = QPushButton("Show Greetings", None)
+        #
+        # layout = QVBoxLayout()
+        # layout.addWidget(self.edit)
+        # layout.addWidget(self.button)
+        #
+        # self.setLayout(layout)
+        #
+        # self.button.clicked.connect(self.greetings)
+
+    def load_data(self, filename: str):
+        country_data: CountryData = read_data(filename)
+        model = CustomTableModel(country_data)
+        self.table_view.setModel(model)
+
+
 if __name__ == '__main__':
     app: QApplication = QApplication()
 
-    data: CountryData = read_data('tests/data.csv')
-    central_widget: CentralWidget = CentralWidget(data)
-    form: Form = Form(central_widget)
+    form: Form = Form()
 
     form.show()
     sys.exit(app.exec_())
