@@ -7,6 +7,9 @@ from PySide2.QtWidgets import QApplication, QHBoxLayout, QMainWindow, QAction, Q
 from PySide2.QtGui import QKeySequence, QColor
 from PySide2.QtCore import qApp, Qt, QAbstractTableModel, QModelIndex
 
+import warnings
+warnings.filterwarnings("ignore", category=DeprecationWarning)
+
 CountryData = List[Tuple[str, float]]
 
 
