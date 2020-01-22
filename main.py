@@ -1,13 +1,15 @@
-from typing import List, Tuple
-import os
 import csv
+import os
 import sys
+import warnings
+from typing import List, Tuple
+
+from PySide2.QtCore import qApp, Qt, QAbstractTableModel, QModelIndex
+from PySide2.QtGui import QKeySequence, QColor
 from PySide2.QtWidgets import QApplication, QHBoxLayout, QMainWindow, QAction, QWidget, QTableView, QHeaderView, \
     QSizePolicy, QFileDialog
-from PySide2.QtGui import QKeySequence, QColor
-from PySide2.QtCore import qApp, Qt, QAbstractTableModel, QModelIndex
+from PySide2.QtSvg import QSvgWidget
 
-import warnings
 warnings.filterwarnings("ignore", category=DeprecationWarning)
 
 CountryData = List[Tuple[str, float]]
@@ -110,19 +112,21 @@ class Form(QMainWindow):
 
         self.setWindowTitle(u'Круговая диаграмма')
 
-        # creating a QTableView
         self.table_view = QTableView()
-
-        # QTableView headers
         self.table_view.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeToContents)
         self.table_view.verticalHeader().setSectionResizeMode(QHeaderView.ResizeToContents)
 
+        self.svg_widget = QSvgWidget()
+
         # central widget layout
         central_layout = QHBoxLayout()
-        size = QSizePolicy(QSizePolicy.Preferred, QSizePolicy.Preferred)
-        size.setHorizontalStretch(1)
-        self.table_view.setSizePolicy(size)
+        # size = QSizePolicy(QSizePolicy.Preferred, QSizePolicy.Preferred)
+        # size.setHorizontalStretch(1)
+        # self.table_view.setSizePolicy(size)
         central_layout.addWidget(self.table_view)
+        central_layout.addWidget(self.svg_widget)
+
+        self.svg_widget.setFixedSize(500, 500)
 
         central_widget = QWidget()
         central_widget.setLayout(central_layout)
@@ -150,8 +154,10 @@ class Form(QMainWindow):
         self.status.showMessage("Data loaded and plotted")
 
         # window dimensions
-        geometry = qApp.desktop().availableGeometry(self)
-        self.setFixedSize(geometry.width() * 0.5, geometry.height() * 0.5)
+        # geometry = qApp.desktop().availableGeometry(self)
+        # self.setFixedSize(geometry.width() * 0.5, geometry.height() * 0.5)
+
+        self.load_svg('./tests/1.svg')
 
     def load_data(self):
         filename, _ = QFileDialog.getOpenFileName(self, "Load data", dir="./tests",
@@ -160,6 +166,9 @@ class Form(QMainWindow):
             country_data: CountryData = read_data(filename)
             model = CustomTableModel(country_data)
             self.table_view.setModel(model)
+
+    def load_svg(self, filename):
+        self.svg_widget.load(filename)
 
 
 if __name__ == '__main__':
