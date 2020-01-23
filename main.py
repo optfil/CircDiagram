@@ -1,5 +1,6 @@
 import csv
 import os
+import svgwrite
 import sys
 import warnings
 from typing import List, Tuple
@@ -143,32 +144,38 @@ class Form(QMainWindow):
         load_action.triggered.connect(self.load_data)
         self.file_menu.addAction(load_action)
 
+        self.statusBar()
+
         # exit QAction
         exit_action = QAction('Exit', self)
         exit_action.setShortcut(QKeySequence.Quit)
         exit_action.triggered.connect(self.close)
         self.file_menu.addAction(exit_action)
 
-        # status Bar
-        self.status = self.statusBar()
-        self.status.showMessage("Data loaded and plotted")
-
         # window dimensions
         # geometry = qApp.desktop().availableGeometry(self)
         # self.setFixedSize(geometry.width() * 0.5, geometry.height() * 0.5)
 
-        self.load_svg('./tests/1.svg')
+        self.draw_diagram()
 
-    def load_data(self):
+    def load_data(self) -> None:
         filename, _ = QFileDialog.getOpenFileName(self, "Load data", dir="./tests",
                                                   filter="Text files (*.txt);;Excel data (*csv)")
         if filename:
             country_data: CountryData = read_data(filename)
             model = CustomTableModel(country_data)
             self.table_view.setModel(model)
+            self.statusBar().showMessage("Data loaded and plotted")
+            self.draw_diagram()
 
-    def load_svg(self, filename):
+    def load_svg(self, filename) -> None:
         self.svg_widget.load(filename)
+
+    def draw_diagram(self) -> None:
+        dwg = svgwrite.Drawing('test.svg', profile='tiny', viewBox='-250 -250 500 500')
+        dwg.add(dwg.circle(center=(0, 0), r=50, fill='blue', stroke='black', stroke_width=5))
+        dwg.save(pretty=True)
+        self.load_svg('test.svg')
 
 
 if __name__ == '__main__':
