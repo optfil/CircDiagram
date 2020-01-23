@@ -5,7 +5,7 @@ import sys
 import warnings
 from typing import List, Tuple
 
-from PySide2.QtCore import qApp, Qt, QAbstractTableModel, QModelIndex
+from PySide2.QtCore import qApp, Qt, QAbstractTableModel, QModelIndex, QTemporaryFile
 from PySide2.QtGui import QKeySequence, QColor
 from PySide2.QtWidgets import QApplication, QHBoxLayout, QMainWindow, QAction, QWidget, QTableView, QHeaderView, \
     QSizePolicy, QFileDialog
@@ -111,6 +111,12 @@ class Form(QMainWindow):
     def __init__(self, parent=None):
         super(Form, self).__init__(parent)
 
+        self.temp_svg_file = QTemporaryFile()
+        if not self.temp_svg_file.open():  # need to obtain temp file name
+            raise RuntimeError('Cannot create temporary file for svg object')
+        self.temp_svg_file.close()
+        print(self.temp_svg_file.fileName())
+
         self.setWindowTitle(u'Круговая диаграмма')
 
         self.table_view = QTableView()
@@ -172,10 +178,10 @@ class Form(QMainWindow):
         self.svg_widget.load(filename)
 
     def draw_diagram(self) -> None:
-        dwg = svgwrite.Drawing('test.svg', profile='tiny', viewBox='-250 -250 500 500')
+        dwg = svgwrite.Drawing(self.temp_svg_file.fileName(), profile='tiny', viewBox='-250 -250 500 500')
         dwg.add(dwg.circle(center=(0, 0), r=50, fill='blue', stroke='black', stroke_width=5))
         dwg.save(pretty=True)
-        self.load_svg('test.svg')
+        self.load_svg(self.temp_svg_file.fileName())
 
 
 if __name__ == '__main__':
