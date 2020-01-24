@@ -69,6 +69,18 @@ def read_data(filename: str) -> CountryData:
         raise RuntimeError('Cannot read data from file {}: unregistered extension'.format(filename))
 
 
+class SvgStyle:
+    def __init__(self):
+        self.line_length = 200
+        self.line_color = 'black'
+        self.line_width = 2
+        self.circle_rad = 10
+        self.circle_rad_normalization = True
+        self.circle_fill_color = 'blue'
+        self.circle_stroke_color = 'black'
+        self.circle_stroke_width = 2
+
+
 class CustomTableModel(QAbstractTableModel):
     def __init__(self, country_data=None):
         QAbstractTableModel.__init__(self)
@@ -112,9 +124,10 @@ class CustomTableModel(QAbstractTableModel):
 
 
 class Form(QMainWindow):
-
     def __init__(self, parent=None):
         super(Form, self).__init__(parent)
+
+        self.svg_style = SvgStyle()
 
         self.temp_svg_file = QTemporaryFile()
         if not self.temp_svg_file.open():  # need to obtain temp file name
@@ -185,14 +198,21 @@ class Form(QMainWindow):
     def draw_diagram(self) -> None:
         n_countries: int = self.model.rowCount()
         if n_countries > 0:
+            style: SvgStyle = self.svg_style
             delta_angle: float = 2.0*math.pi/n_countries
             max_value: float = max(self.model.values)
             dwg = Drawing(self.temp_svg_file.fileName(), profile='tiny', viewBox='-250 -250 500 500')
             for idx, v in enumerate(self.model.values):
-                x: float = 200 * v/max_value * math.sin(idx * delta_angle)
-                y: float = -200 * v/max_value * math.cos(idx * delta_angle)
-                dwg.add(shapes.Line(start=(0, 0), end=(x, y), stroke='black', stroke_width=2))
-                dwg.add(shapes.Circle(center=(x, y), r=10))
+                x: float = style.line_length * v/max_value * math.sin(idx * delta_angle)
+                y: float = -style.line_length * v/max_value * math.cos(idx * delta_angle)
+                dwg.add(shapes.Line(start=(0, 0), end=(x, y),
+                                    stroke=style.line_color, stroke_width=style.line_width))
+                radius: float = style.circle_rad
+                if style.circle_rad_normalization:
+                    radius *= v/max_value
+                dwg.add(shapes.Circle(center=(x, y), r=radius,
+                                      stroke=style.circle_stroke_color, stroke_width=style.circle_stroke_width,
+                                      fill=style.circle_fill_color))
             # dwg.add(dwg.circle(center=(0, 0), r=50, fill='blue', stroke='black', stroke_width=5))
             dwg.save(pretty=True)
             self.load_svg(self.temp_svg_file.fileName())
