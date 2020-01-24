@@ -1,6 +1,7 @@
 import csv
+import math
 import os
-import svgwrite
+from svgwrite import Drawing, shapes
 import sys
 import warnings
 from typing import List, Tuple
@@ -71,9 +72,13 @@ def read_data(filename: str) -> CountryData:
 class CustomTableModel(QAbstractTableModel):
     def __init__(self, country_data=None):
         QAbstractTableModel.__init__(self)
-        self.countries, self.values = zip(*country_data)
-        self.countries = list(self.countries)
-        self.values = list(self.values)
+        if country_data:
+            self.countries, self.values = zip(*country_data)
+            self.countries = list(self.countries)
+            self.values = list(self.values)
+        else:
+            self.countries = []
+            self.values = []
 
     def rowCount(self, parent=QModelIndex()):
         return len(self.values)
@@ -115,10 +120,10 @@ class Form(QMainWindow):
         if not self.temp_svg_file.open():  # need to obtain temp file name
             raise RuntimeError('Cannot create temporary file for svg object')
         self.temp_svg_file.close()
-        print(self.temp_svg_file.fileName())
 
         self.setWindowTitle(u'Круговая диаграмма')
 
+        self.model = CustomTableModel()
         self.table_view = QTableView()
         self.table_view.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeToContents)
         self.table_view.verticalHeader().setSectionResizeMode(QHeaderView.ResizeToContents)
@@ -169,8 +174,8 @@ class Form(QMainWindow):
                                                   filter="Text files (*.txt);;Excel data (*csv)")
         if filename:
             country_data: CountryData = read_data(filename)
-            model = CustomTableModel(country_data)
-            self.table_view.setModel(model)
+            self.model = CustomTableModel(country_data)
+            self.table_view.setModel(self.model)
             self.statusBar().showMessage("Data loaded and plotted")
             self.draw_diagram()
 
@@ -178,10 +183,19 @@ class Form(QMainWindow):
         self.svg_widget.load(filename)
 
     def draw_diagram(self) -> None:
-        dwg = svgwrite.Drawing(self.temp_svg_file.fileName(), profile='tiny', viewBox='-250 -250 500 500')
-        dwg.add(dwg.circle(center=(0, 0), r=50, fill='blue', stroke='black', stroke_width=5))
-        dwg.save(pretty=True)
-        self.load_svg(self.temp_svg_file.fileName())
+        n_countries: int = self.model.rowCount()
+        if n_countries > 0:
+            delta_angle: float = 2.0*math.pi/n_countries
+
+            dwg = Drawing(self.temp_svg_file.fileName(), profile='tiny', viewBox='-250 -250 500 500')
+            for idx, v in enumerate(self.model.values):
+                x: float = 200 * math.sin(idx * delta_angle)
+                y: float = -200 * math.cos(idx * delta_angle)
+                dwg.add(shapes.Line(start=(0, 0), end=(x, y), stroke='black', stroke_width=2))
+                dwg.add(shapes.Circle(center=(x, y), r=10))
+            # dwg.add(dwg.circle(center=(0, 0), r=50, fill='blue', stroke='black', stroke_width=5))
+            dwg.save(pretty=True)
+            self.load_svg(self.temp_svg_file.fileName())
 
 
 if __name__ == '__main__':
