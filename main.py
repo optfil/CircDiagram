@@ -1,16 +1,16 @@
 import csv
 import math
 import os
-from svgwrite import Drawing, shapes
 import sys
 import warnings
 from typing import List, Tuple
 
-from PySide2.QtCore import qApp, Qt, QAbstractTableModel, QModelIndex, QTemporaryFile
+from PySide2.QtCore import Qt, QAbstractTableModel, QModelIndex, QTemporaryFile
 from PySide2.QtGui import QKeySequence, QColor
-from PySide2.QtWidgets import QApplication, QHBoxLayout, QMainWindow, QAction, QWidget, QTableView, QHeaderView, \
-    QSizePolicy, QFileDialog
 from PySide2.QtSvg import QSvgWidget
+from PySide2.QtWidgets import QApplication, QHBoxLayout, QMainWindow, QAction, QWidget, QTableView, QHeaderView, \
+    QFileDialog
+from svgwrite import Drawing, shapes
 
 warnings.filterwarnings("ignore", category=DeprecationWarning)
 
@@ -186,11 +186,11 @@ class Form(QMainWindow):
         n_countries: int = self.model.rowCount()
         if n_countries > 0:
             delta_angle: float = 2.0*math.pi/n_countries
-
+            max_value: float = max(self.model.values)
             dwg = Drawing(self.temp_svg_file.fileName(), profile='tiny', viewBox='-250 -250 500 500')
             for idx, v in enumerate(self.model.values):
-                x: float = 200 * math.sin(idx * delta_angle)
-                y: float = -200 * math.cos(idx * delta_angle)
+                x: float = 200 * v/max_value * math.sin(idx * delta_angle)
+                y: float = -200 * v/max_value * math.cos(idx * delta_angle)
                 dwg.add(shapes.Line(start=(0, 0), end=(x, y), stroke='black', stroke_width=2))
                 dwg.add(shapes.Circle(center=(x, y), r=10))
             # dwg.add(dwg.circle(center=(0, 0), r=50, fill='blue', stroke='black', stroke_width=5))
