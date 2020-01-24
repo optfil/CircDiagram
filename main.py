@@ -213,7 +213,6 @@ class Form(QMainWindow):
                 dwg.add(shapes.Circle(center=(x, y), r=radius,
                                       stroke=style.circle_stroke_color, stroke_width=style.circle_stroke_width,
                                       fill=style.circle_fill_color))
-            # dwg.add(dwg.circle(center=(0, 0), r=50, fill='blue', stroke='black', stroke_width=5))
             dwg.save(pretty=True)
             self.load_svg(self.temp_svg_file.fileName())
 
