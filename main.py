@@ -5,11 +5,11 @@ import sys
 import warnings
 from typing import List, Tuple
 
-from PySide2.QtCore import Qt, QAbstractTableModel, QModelIndex, QTemporaryFile
+from PySide2.QtCore import Qt, QAbstractTableModel, QModelIndex, QTemporaryFile, Signal, Slot
 from PySide2.QtGui import QKeySequence, QColor
 from PySide2.QtSvg import QSvgWidget
-from PySide2.QtWidgets import QApplication, QHBoxLayout, QMainWindow, QAction, QWidget, QTableView, QHeaderView, \
-    QFileDialog
+from PySide2.QtWidgets import QApplication, QHBoxLayout, QGridLayout, QMainWindow, QAction, QWidget, QTableView, \
+    QHeaderView, QFileDialog, QLabel, QSpinBox, QCheckBox, QColorDialog, QComboBox
 from svgwrite import Drawing, shapes
 
 warnings.filterwarnings("ignore", category=DeprecationWarning)
@@ -81,6 +81,75 @@ class SvgStyle:
         self.circle_stroke_width = 2
 
 
+class StyleWidget(QWidget):
+    style_changed = Signal(SvgStyle)
+
+    def __init__(self, parent=None):
+        super(StyleWidget, self).__init__(parent)
+
+        self.label_line_length = QLabel(u'Длина линии')
+        self.spinbox_line_length = QSpinBox()
+        self.spinbox_line_length.setMinimum(10)
+        self.spinbox_line_length.setMaximum(250)
+        self.spinbox_line_length.setSingleStep(10)
+        self.spinbox_line_length.setValue(200)
+
+        self.label_line_width = QLabel(u'Толщина линии')
+        self.spinbox_line_width = QSpinBox()
+        self.spinbox_line_width.setMinimum(1)
+        self.spinbox_line_width.setMaximum(10)
+        self.spinbox_line_width.setSingleStep(1)
+        self.spinbox_line_width.setValue(2)
+
+        self.label_circle_rad = QLabel(u'Радиус круга')
+        self.spinbox_circle_rad = QSpinBox()
+        self.spinbox_circle_rad.setMinimum(1)
+        self.spinbox_circle_rad.setMaximum(30)
+        self.spinbox_circle_rad.setSingleStep(1)
+        self.spinbox_circle_rad.setValue(10)
+
+        self.label_line_color = QLabel(u'Цвет линии')
+        self.combobox_line_color = QComboBox()
+        self.combobox_line_color.addItem(u'черный', 'black')
+        self.combobox_line_color.addItem(u'красный', 'red')
+        self.combobox_line_color.addItem(u'зеленый', 'green')
+        self.combobox_line_color.addItem(u'синий', 'blue')
+
+        self.checkbox_normalize_circle_rad = QCheckBox(u'Круги одинакового размера')
+
+        layout = QGridLayout()
+        layout.addWidget(self.label_line_length, 0, 0, Qt.AlignRight)
+        layout.addWidget(self.spinbox_line_length, 0, 1)
+        layout.addWidget(self.label_line_width, 1, 0, Qt.AlignRight)
+        layout.addWidget(self.spinbox_line_width, 1, 1)
+        layout.addWidget(self.label_circle_rad, 2, 0, Qt.AlignRight)
+        layout.addWidget(self.spinbox_circle_rad, 2, 1)
+        layout.addWidget(self.label_line_color, 3, 0, Qt.AlignRight)
+        layout.addWidget(self.combobox_line_color, 3, 1)
+        layout.addWidget(self.checkbox_normalize_circle_rad, 4, 0, 1, 2)
+        layout.setRowStretch(5, 1)
+        self.setLayout(layout)
+
+        self.spinbox_line_length.valueChanged.connect(self.on_change)
+        self.spinbox_line_width.valueChanged.connect(self.on_change)
+        self.spinbox_circle_rad.valueChanged.connect(self.on_change)
+        self.combobox_line_color.activated.connect(self.on_change)
+        self.checkbox_normalize_circle_rad.stateChanged.connect(self.on_change)
+        self.on_change()
+
+    @Slot()
+    def on_change(self):
+        style = SvgStyle()
+        style.line_length = self.spinbox_line_length.value()
+        style.line_width = self.spinbox_line_width.value()
+        style.circle_stroke_width = self.spinbox_line_width.value()
+        style.circle_rad = self.spinbox_circle_rad.value()
+        style.line_color = self.combobox_line_color.currentData(Qt.UserRole)
+        style.circle_stroke_color = self.combobox_line_color.currentData(Qt.UserRole)
+        style.circle_rad_normalization = not self.checkbox_normalize_circle_rad.isChecked()
+        self.style_changed.emit(style)
+
+
 class CustomTableModel(QAbstractTableModel):
     def __init__(self, country_data=None):
         QAbstractTableModel.__init__(self)
@@ -141,46 +210,47 @@ class Form(QMainWindow):
         self.table_view.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeToContents)
         self.table_view.verticalHeader().setSectionResizeMode(QHeaderView.ResizeToContents)
 
-        self.svg_widget = QSvgWidget()
+        self.widget_svg = QSvgWidget()
+        self.widget_style = StyleWidget()
+        self.widget_style.style_changed.connect(self.style_updated)
 
         # central widget layout
-        central_layout = QHBoxLayout()
+        layout = QHBoxLayout()
         # size = QSizePolicy(QSizePolicy.Preferred, QSizePolicy.Preferred)
         # size.setHorizontalStretch(1)
         # self.table_view.setSizePolicy(size)
-        central_layout.addWidget(self.table_view)
-        central_layout.addWidget(self.svg_widget)
+        layout.addWidget(self.table_view)
+        layout.addWidget(self.widget_svg)
+        layout.addWidget(self.widget_style)
 
-        self.svg_widget.setFixedSize(500, 500)
+        self.widget_svg.setFixedSize(500, 500)
 
-        central_widget = QWidget()
-        central_widget.setLayout(central_layout)
+        widget_central = QWidget()
+        widget_central.setLayout(layout)
 
-        self.setCentralWidget(central_widget)
+        self.setCentralWidget(widget_central)
 
         # main menu
         self.menu = self.menuBar()
-        self.file_menu = self.menu.addMenu("File")
+        self.menu_file = self.menu.addMenu("File")
 
         # load QAction
-        load_action = QAction('Open', self)
-        load_action.setShortcut(QKeySequence.Open)
-        load_action.triggered.connect(self.load_data)
-        self.file_menu.addAction(load_action)
+        action_load = QAction('Open', self)
+        action_load.setShortcut(QKeySequence.Open)
+        action_load.triggered.connect(self.load_data)
+        self.menu_file.addAction(action_load)
 
         self.statusBar()
 
         # exit QAction
-        exit_action = QAction('Exit', self)
-        exit_action.setShortcut(QKeySequence.Quit)
-        exit_action.triggered.connect(self.close)
-        self.file_menu.addAction(exit_action)
+        action_exit = QAction('Exit', self)
+        action_exit.setShortcut(QKeySequence.Quit)
+        action_exit.triggered.connect(self.close)
+        self.menu_file.addAction(action_exit)
 
         # window dimensions
         # geometry = qApp.desktop().availableGeometry(self)
         # self.setFixedSize(geometry.width() * 0.5, geometry.height() * 0.5)
-
-        self.draw_diagram()
 
     def load_data(self) -> None:
         filename, _ = QFileDialog.getOpenFileName(self, "Load data", dir="./tests",
@@ -193,7 +263,7 @@ class Form(QMainWindow):
             self.draw_diagram()
 
     def load_svg(self, filename) -> None:
-        self.svg_widget.load(filename)
+        self.widget_svg.load(filename)
 
     def draw_diagram(self) -> None:
         n_countries: int = self.model.rowCount()
@@ -215,6 +285,11 @@ class Form(QMainWindow):
                                       fill=style.circle_fill_color))
             dwg.save(pretty=True)
             self.load_svg(self.temp_svg_file.fileName())
+
+    @Slot()
+    def style_updated(self, style: SvgStyle):
+        self.svg_style = style
+        self.draw_diagram()
 
 
 if __name__ == '__main__':
